@@ -129,5 +129,5 @@ export default {
       border:2px solid rgb(119, 107, 107);
       border-radius:15px;
 }
-
+ 
 </style> 
