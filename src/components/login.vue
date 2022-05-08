@@ -19,9 +19,7 @@
                   </p>
                   <div class="input-group input-group-outline my-3">
                     <!-- <label class="form-label">Email</label> -->
-                    <input type="email" v-model="loginForm.username" class="form-control" value="Email" 
-                    onfocus='if(this.value=="Email"){this.value="";}; ' 
-                    onblur='if(this.value==""){this.value="Email";};'>
+                    <input type="email" v-model="loginForm.username" class="form-control">
                   </div>
                   <p class="mt-2 text-sm text-left">
                     Password：
@@ -44,18 +42,11 @@
         </div>
       </div>
     </div>
-    <el-alert
-      title="错误提示的文案"
-      type="error"
-      description="文字说明文字说明文字说明文字说明文字说明文字说明"
-      show-icon>
-    </el-alert>
 </div>
 </template>
 
 
 <script>
-import request from '@/utils/request'
 export default {
   name: 'Login',
   data(){
@@ -78,25 +69,70 @@ export default {
               });
         }
         else{
-          request.post("/user",this.loginForm).then(res =>{
-           if(res==true) {
-              this.$message('Login successful !');
-              this.$router.push('/home')
-           }
-           else {
-             const h = this.$createElement;
-             this.$notify.error({
-                title: 'Login Failed',
-                message: h('i', { style: 'color: teal'}, 'Incorrect username or password')
-              });
-           }
-           console.log(res)
-         })
+          this.$axios.get('http://127.0.0.1:5000/login',{
+              params:{
+               username:this.loginForm.username,
+               password:this.loginForm.password
+              }
+            }).then(res=>{ 
+              if(res.data.msg=='success') {
+                  localStorage.s="true";
+                  localStorage.removeItem('username');
+                  localStorage.username=this.loginForm.username;
+                  localStorage.role = res.data.role;
+                  this.$message('Login successful !');
+                  this.$router.push('/home')
+              }
+              else {
+                const h = this.$createElement;
+                this.$notify.error({
+                    title: 'Login Failed',
+                    message: h('i', { style: 'color: teal'}, 'Incorrect username or password')
+                  });
+              }
+              console.log(res)
+            });
         }
         
-        //   console.log(this.loginForm)
-        //  this.$router.push('/home')
       }
+      // login_in(){
+      //   if(this.loginForm.username==''||this.loginForm.password=='')
+      //   {
+      //     const h = this.$createElement;
+      //        this.$notify.error({
+      //           title: 'Login Failed',
+      //           message: h('i', { style: 'color: teal'}, 'Username or password cannot be empty')
+      //         });
+      //   }
+      //   else{
+      //     request.get("/user",{
+      //       params:{
+      //          username:this.loginForm.username,
+      //          password:this.loginForm.password
+      //       }
+      //     }).then(res =>{
+      //      if(res==0||res==1) {
+      //         localStorage.s="true";
+      //         localStorage.removeItem('username');
+      //         localStorage.username=this.loginForm.username;
+      //         localStorage.role = res;
+      //         this.$message('Login successful !');
+      //         this.$router.push('/home')
+      //      }
+      //      else {
+      //        const h = this.$createElement;
+      //        this.$notify.error({
+      //           title: 'Login Failed',
+      //           message: h('i', { style: 'color: teal'}, 'Incorrect username or password')
+      //         });
+      //      }
+      //      console.log(res)
+      //    })
+      //   }
+        
+      //   //   console.log(this.loginForm)
+      //   //  this.$router.push('/home')
+      // }
   }
 }
 </script>
