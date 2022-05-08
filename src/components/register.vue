@@ -17,13 +17,11 @@
                 <div class="card-body">
                   <form role="form">
                     <p class="mt-0 text-sm text-left">
-                      User：
+                      Username：(Can't be changed after registration!)
                     </p>
                     <div class="input-group input-group-outline mb-1">
                       <!-- <label class="form-label">Name</label> -->
-                      <input type="email" v-model="registerForm.username" class="form-control" value="Email" 
-                    onfocus='if(this.value=="Email"){this.value="";}; ' 
-                    onblur='if(this.value==""){this.value="Email";};'>
+                      <input type="email" v-model="registerForm.username" class="form-control">
                     </div>
                     <p class="mt-2 text-sm text-left">
                       Password：
@@ -39,9 +37,13 @@
                       <!-- <label class="form-label">Password</label> -->
                       <input type="password" v-model="re_password" class="form-control" >
                     </div>
+                    <div class="form-check form-switch d-flex align-items-center mb-3">
+                      <input class="form-check-input" v-model="checkFlag" type="checkbox" id="rememberMe">
+                      <label class="form-check-label mb-0 ms-2" for="rememberMe">If Company</label>
+                    </div>
               
                     <div class="text-center">
-                      <button type="button" @click="register_in" class="btn btn-lg bg-gradient-primary btn-lg w-100 mt-4 mb-0">Sign Up</button>
+                      <button type="button" @click="register_in()" class="btn btn-lg bg-gradient-primary btn-lg w-100 mt-4 mb-0">Sign Up</button>
                     </div>
                   </form>
                 </div>
@@ -57,11 +59,19 @@
         </div>
       </div>
     </section>
+    <el-dialog width="30%" title="Please Enter Key Code" :visible.sync="Visiable" @open="open()">
+             <div class="input-group input-group-outline mb-3">
+                      <!-- <label class="form-label">Password</label> -->
+                      <input type="password" v-model="keyCode" class="form-control" >
+              </div>
+              <span slot="footer" class="dialog-footer">
+                 <el-button type="text" @click="confirm()" class="btn btn-outline-primary btn-sm mb-1" >Confirm</el-button>
+              </span>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import request from '@/utils/request'
 export default {
   name: 'Register',
   data(){
@@ -69,13 +79,64 @@ export default {
         registerForm:
         {
           username:'',
-          password:''
+          password:'',
+          role:0
         },
-        re_password:''
+        re_password:'',
+        checkFlag:false,
+        Visiable:false,
+        keyCode:'',
+        key:'company',
       }
   },
+  watch:{
+    checkFlag:{
+      handler() {
+          console.log("checkFlag is changed")
+          if(this.checkFlag) this.registerForm.role=1;
+          else this.registerForm.role=0
+      },
+    }
+  },
   methods:{
+      open(){
+        this.keyCode=''
+      },
+      confirm(){
+        if(this.keyCode != this.key)
+        {
+          const h = this.$createElement;
+             this.$notify.error({
+                title: 'Register Failed',
+                message: h('i', { style: 'color: teal'}, 'Key code is not correct')
+              });
+        }
+        else 
+        {
+          this.$axios.get('http://127.0.0.1:5000/register',{
+              params:{
+               username:this.registerForm.username,
+               password:this.registerForm.password,
+               role:this.registerForm.role
+              }
+            }).then(res=>{
+           
+            this.$message('Register successful !');
+                this.$axios.get('http://127.0.0.1:5000/profile',{
+                    params:{
+                      username:this.registerForm.username,
+                      role:this.registerForm.role
+                    }
+                  }).then(res=>{
+                       console.log(res.data.msg)
+                  })
+          })
+          this.Visiable = false
+          this.$router.push('/login')
+        }
+      },
       register_in(){
+        console.log(this.checkFlag)
         if(this.registerForm.username==''||this.registerForm.password==''||this.re_password=='')
         {
           const h = this.$createElement;
@@ -93,24 +154,62 @@ export default {
               });
         }
         else{
-          request.post("/user/register",this.registerForm).then(res =>{
+          if(this.checkFlag == true)
+          {
+            this.$axios.get('http://127.0.0.1:5000/register/find',{
+              params:{
+               username:this.registerForm.username
+              }
+            }).then(res=>{
            
-            if(res==true) {
-              this.$message('Register successful !');
-              this.$router.push('/login')
-           }
-           else {
-             const h = this.$createElement;
-             this.$notify.error({
-                title: 'Register Failed',
-                message: h('i', { style: 'color: teal'}, 'The username you entered already exists!')
-              });
-           }
-           console.log(res)
-         })
+              if(res.data.msg=='success') {
+                this.Visiable=true
+                }
+                else {
+                  const h = this.$createElement;
+                  this.$notify.error({
+                      title: 'Register Failed',
+                      message: h('i', { style: 'color: teal'}, 'The username you entered already exists!')
+                    });
+                }
+                console.log(res)
+              })
+          }
+          else 
+          {
+            this.$axios.get('http://127.0.0.1:5000/register',{
+              params:{
+               username:this.registerForm.username,
+               password:this.registerForm.password,
+               role:this.registerForm.role
+              }
+            }).then(res=>{
+           
+            if(res.data.msg=='success') {
+                this.$message('Register successful !');
+                this.$axios.get('http://127.0.0.1:5000/profile',{
+                    params:{
+                      username:this.registerForm.username,
+                      role:this.registerForm.role
+                    }
+                  }).then(res=>{
+                       console.log(res.data.msg)
+                  })
+                this.$router.push('/login')
+              }
+              else {
+                const h = this.$createElement;
+                this.$notify.error({
+                    title: 'Register Failed',
+                    message: h('i', { style: 'color: teal'}, 'The username you entered already exists!')
+                  });
+              }
+              console.log(res)
+            })
+          }
         }
       }
-  }
+  },
 }
 </script>
 
@@ -118,10 +217,10 @@ export default {
 
 <style>
 #building{
-background:url('../assets/img/illustrations/illustration-signup.jpg');
-width:100%;
-height:100%;
-position:fixed;
-background-size:100% 100%;
+  background:url('../assets/img/illustrations/illustration-signup.jpg');
+  width:100%;
+  height:100%;
+  position:fixed;
+  background-size:100% 100%;
 }
 </style>
